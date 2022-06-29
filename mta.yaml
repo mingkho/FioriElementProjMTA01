@@ -1,0 +1,93 @@
+_schema-version: "3.2"
+ID: root-mta-2806-jlong
+description: Root MTA
+version: 0.0.1
+modules:
+- name: root-mta-2806-jlong-dest-content
+  type: com.sap.application.content
+  requires:
+  - name: root-mta-2806-jlong-destination-service
+    parameters:
+      content-target: true
+  - name: root-mta-2806-jlong-repo-host
+    parameters:
+      service-key:
+        name: root-mta-2806-jlong-repo-host-key
+  - name: root-mta-2806-jlong-uaa
+    parameters:
+      service-key:
+        name: root-mta-2806-jlong-uaa-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: root-mta-2806-jlong_repo_host
+          ServiceInstanceName: root-mta-2806-jlong-html5-srv
+          ServiceKeyName: root-mta-2806-jlong-repo-host-key
+          sap.cloud.service: root-mta-2806-jlong
+        - Authentication: OAuth2UserTokenExchange
+          Name: root-mta-2806-jlong_uaa
+          ServiceInstanceName: root-mta-2806-jlong-xsuaa-srv
+          ServiceKeyName: root-mta-2806-jlong-uaa-key
+          sap.cloud.service: root-mta-2806-jlong
+        existing_destinations_policy: update
+  build-parameters:
+    no-source: true
+- name: root-mta-2806-jlong-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: root-mta-2806-jlong-repo-host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - testnsrootlrop2806jlong.zip
+      name: testnsrootlrop2806jlong
+      target-path: resources/
+- name: testnsrootlrop2806jlong
+  type: html5
+  path: root-lrop-2806-jlong
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: root-mta-2806-jlong-uaa
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: root-mta-2806-jlong-xsuaa-srv
+    service-plan: application
+- name: root-mta-2806-jlong-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: root-mta-2806-jlong-destination-service
+    service-plan: lite
+- name: root-mta-2806-jlong-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: root-mta-2806-jlong-html5-srv
+    service-plan: app-host
+parameters:
+  deploy_mode: html5-repo
